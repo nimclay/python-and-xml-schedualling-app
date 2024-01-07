@@ -1,0 +1,9 @@
+<schedual>
+    <schedualEntry>
+        <day>monday</day>
+        <starttime>00:01</starttime>
+        <endtime>01:01</endtime>
+        <title>class1</title>
+        <description1>at classroomxx</description1>
+    </schedualEntry>
+</schedual>
