@@ -9,6 +9,7 @@ from datetime import datetime
 fileName = "schedual.xml"
 maxTitleLength = 60
 maxDescriptionLength = 300
+
 # Define the window layout
 mainLayout = [
     [sg.Text("center console", font = ("Arial",11,"bold"))],
@@ -53,7 +54,7 @@ schedualAddLayout = [
     [sg.Text("error message: ", font = ("Arial",11))],
     [sg.Text(" ", font = ("Arial",11), key = "error_message")],
 ]
-
+#combine the layouts into different tabs
 layout = [[sg.TabGroup([[sg.Tab('main', mainLayout), 
                          sg.Tab('del', schedualRemoveLayout), 
                          sg.Tab('add',schedualAddLayout)]])]]
@@ -61,6 +62,7 @@ layout = [[sg.TabGroup([[sg.Tab('main', mainLayout),
 # Create the window
 mainwindow = sg.Window(title="My Window", layout=layout, margins=(10, 10), background_color="black",finalize=True)
 
+#class of each element represented in the xml file for easy access
 class SchedualValues:
   def __init__(self, dayString, startTime, endTime, titleString,descriptionString): #times are in hh:mm:ss format
     self.day = dayString
@@ -69,7 +71,7 @@ class SchedualValues:
     self.title = titleString
     self.description1 = descriptionString
     
-
+#create an XML file if one does not already exist on path
 def CreateXMLFile(fileName):
     if os.path.exists(fileName):
         return
@@ -79,6 +81,7 @@ def CreateXMLFile(fileName):
         tree.write(files) 
     return
 
+#store the contents of each xml element into a list of dictionaries to be parsed into other functions
 def queryXML(fileName):
     tree = et.parse(fileName)
     root = tree.getroot()
@@ -150,8 +153,6 @@ def RemoveEntry(button_key, fileName, window):
     DisplayDayResults(day, schedual_dict_list, window)
     
 
-CreateXMLFile(fileName)
-
 def HandleDay(event):
     if event == "Monday" or event == "Tuesday" or event == "Wednesday" or event == "Thursday" or event == "Friday" or event == "Saturday" or event == "Sunday":
         return event
@@ -167,7 +168,7 @@ def DisplayDayResults(dayName, schedual_dict_list, window):
                 sg.Text(f"{schedual_dict['Title']}"),
                 sg.Text(f"{schedual_dict['Start Time']}"),
                 sg.Text(f"{schedual_dict['End Time']}"),
-                #give button a unique key to determine which element to remove
+                #give button a unique key to determine which element to remove, since lambda functions only effected the last element
                 sg.Button('del', key = f"del-{schedual_dict['Day']}-{schedual_dict['Start Time']}-{schedual_dict['End Time']}-{schedual_dict['Title']}-{schedual_dict['Description']}")
             ]
             new_layout.append(new_element)
@@ -191,7 +192,7 @@ def ValidateForm (day,startHour,startMinute,endHour,endMinute,title,description1
     if day != "Monday" and day != "Tuesday" and day != "Wednesday" and day != "Thursday" and day != "Friday" and day != "Saturday" and day != "Sunday":
         validated = False
         errorMessage = "[FAILED]: day is invalid"
-    #validate that start time is numeric in the form hh:mm
+    #validate if the start time is numeric and in the form hh:mm
     if (startHour.isnumeric() and len(startHour) == 2) and (startMinute.isnumeric() and len(startMinute) == 2):
         startTime = f"{startHour}:{startMinute}"
     else:
@@ -204,7 +205,7 @@ def ValidateForm (day,startHour,startMinute,endHour,endMinute,title,description1
         validated = False
         errorMessage = "[FAILED]: end time is invalid"
     
-    #since there is no way to limit the input size of the element, the max size needs to be handled here
+    #since there is no way to limit the input size of the element, the max size needs to be handled here to improve safety
     if (len(title) > maxTitleLength):
         validated = False
         errorMessage = "[FAILED]: title length exceeds the character limit"
@@ -230,6 +231,7 @@ def ValidateForm (day,startHour,startMinute,endHour,endMinute,title,description1
     window['error_message'].Update(errorMessage)
     return
 
+#display all entries in a table separated by the weekday
 def GenerateSchedual(schedual_dict_list):
     day_dict = {day: [] for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']}
     for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
@@ -248,7 +250,8 @@ def GenerateSchedual(schedual_dict_list):
 
     window = sg.Window('schedual', layout, finalize=True,size = (1080,360))
     return window
-
+    
+#select an individual dictionary within the list in which the current time falls within, to then display to the user
 def ShowCurrentActivity(schedual_dict_list):
     currentTime = datetime.now()
     currentDay = currentTime.strftime("%A")
@@ -262,7 +265,7 @@ def ShowCurrentActivity(schedual_dict_list):
             break
     if displayedResult is None:
         return
-    
+        
     new_element = [sg.Frame('', [   [sg.Text("Title", font = ("Arial",11,"bold"))],
                                     [sg.Text(f"{textwrap.fill(displayedResult['Title'],50)}")],
                                     [sg.Text("Description", font = ("Arial",11,"bold"))],
@@ -281,9 +284,10 @@ def ShowCurrentActivity(schedual_dict_list):
     window = sg.Window('schedual', layout, finalize=True,size = (200,300))
     return window
     
-    
+CreateXMLFile(fileName) 
 while True:
-    window, event, values = sg.read_all_windows(timeout=5000) #run rest of code every five seconds without input
+    #read all windows is required to get the input of instantiated windows
+    window, event, values = sg.read_all_windows(timeout=5000) #run rest of code every five seconds without input, for if the window needs to be updated
     
     schedual_dict_list = queryXML(fileName)
     
